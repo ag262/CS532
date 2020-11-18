@@ -1,3 +1,3 @@
 # CS532 Sec. 4
 
-Project proposal has been added
+Data is from: https://www.kaggle.com/gpreda/chinese-mnist
