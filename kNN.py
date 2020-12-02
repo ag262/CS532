@@ -5,14 +5,23 @@ import os
 from skimage import io
 from skimage import filters
 
+from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn import metrics
+
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.svm import LinearSVC, SVC
+from sklearn.metrics import plot_confusion_matrix
+# from mlxtend.plotting import plot_decision_regions
+
 
 
 # choose the data to use; there are 15000 images, but the samples only have
 # 150 images; preprocessed means the images are centered and rescaled
 # directory = 'data/original_sample'
 # directory = 'data/preprocessed_sample'
-directory = 'data/original'
-# directory = 'data/preprocessed'
+# directory = 'data/original'
+directory = 'data/preprocessed'
 
 # preallocate feature matrix X and label vector d
 num_pixels = 64*64
@@ -46,35 +55,67 @@ for (i, f_name) in enumerate(os.listdir(directory)):
 	d[i] = label
 
 
-temp = np.hstack((X,d))
-np.random.shuffle(temp)
-np.random.shuffle(temp)
-X = temp[:,:-1]
-d = temp[:,-1]
 
-# 1 for "train", 2 for test
-num_train = 10000
-# X1 = X[:num_train,:]
-# X2 = X[num_train:,:]
-# d1 = d[:num_train]
-# d2 = d[num_train:]
-k = 500
+# split data into nontesting and testing data
+X_nontest, X_test, d_nontest, d_test = train_test_split(X,d,test_size=0.2) # train size is 12000
 
-num_err = 0
-for i in range(num_train,num_images):
+# hyperparameter tuning:
 
-	# get indices of the k NN
-	dist_to_neighbors = np.linalg.norm(X[:num_train,:]-X[i,:],axis=1)
-	inds = np.argsort(dist_to_neighbors)[:k]
+if False:
 
-	# use the number of occurrences of codes of each class to choose the code of
-	# the ith label (codes go from 1 through 15)
-	classes = d[inds].astype(int)
-	occurrences = np.bincount(classes)
-	code = np.argmax(occurrences)
+	k_arr = np.array([1,5,10])
+	CV_err_arr = np.array([])
+	CV_var_arr = np.array([])
 
-	if code != d[i]:
-		num_err += 1
+	for k in k_arr:
 
-err_rate = num_err/(num_images-num_train)
-print('Error Rate = ' + str(round(err_rate,3)))
+		# 10-fold cross validation:
+
+		num_split = 10
+		skf = StratifiedKFold(n_splits=num_split)
+		err_arr = np.array([])
+
+		for train_ind,valid_ind in skf.split(X_nontest,d_nontest):
+
+			X_train = X_nontest[train_ind]
+			d_train = d_nontest[train_ind]
+			X_valid = X_nontest[valid_ind]
+			d_valid = d_nontest[valid_ind]
+
+			# create and train the kNN Classifier
+			knn = KNeighborsClassifier(n_neighbors=k)
+			knn.fit(X_train,d_train.ravel())
+
+			# test model on the validation data
+			d_hat = knn.predict(X_valid)
+			err = 100*( 1 - metrics.accuracy_score(d_valid.ravel(),d_hat) )
+
+			err_arr = np.append(err_arr,err)
+
+		CV_err_arr = np.append(CV_err_arr,np.mean(err_arr))
+		CV_var_arr = np.append(CV_var_arr,np.var(err_arr))
+
+	print(np.round(CV_err_arr,2))
+	print(np.round(np.sqrt(CV_var_arr),2))
+
+
+
+# apply model to test data using hyperparameter k=1 (which was found to be the
+# best; this is probably because images are "far" away from each other in
+# space and thus there's no noise to be reduced by increasing k):
+
+# create and train the kNN Classifier
+knn = KNeighborsClassifier(n_neighbors=1)
+knn.fit(X_nontest,d_nontest.ravel())
+
+# plot the confusion matrix
+matrix = plot_confusion_matrix(knn,X_test,d_test,cmap=plt.cm.Blues,normalize='true')
+plt.title('Confusion matrix for OvR classifier')
+plt.show(matrix)
+plt.show()
+
+# test model on the test data
+d_hat = knn.predict(X_test)
+err = 100*( 1 - metrics.accuracy_score(d_test.ravel(),d_hat) )
+
+print(np.round(err,2))
