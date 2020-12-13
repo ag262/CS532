@@ -5,20 +5,6 @@ import os
 from skimage import io
 from skimage import filters
 
-# def preprocess(x,y):
-# 	x = tf.cast(x,tf.float32)
-# 	y = tf.cast(y,tf.int64)
-# 	return x,y
-
-# def create_dataset(xs, ys, n_classes):
-# 	ys = tf.one_hot(ys,depth=n_classes)
-# 	return tf.data.Dataset.from_tensor_slices((xs, ys)) \
-# 		# .map(preprocess) \
-# 		# .shuffle(len(ys)) \
-# 		.batch(128)
-
-
-
 # choose the data to use; there are 15000 images, but the samples only have
 # 150 images; preprocessed means the images are centered and rescaled
 # directory = 'data/original_sample'
