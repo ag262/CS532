@@ -8,4 +8,4 @@ If you wish to run the analysis of the data yourself, follow these steps:
 
 1) Download the non-preprocessed data from the link above.
 2) Run "preprocess_data.py" to generate the preprocessed data.
-3) Run one of the three other .py files (e.g. "kNN.py") to see the misclassification error of the model on either the non-preprocessed or preprocessed data.
+3) Run one of the three other .py files (e.g. "kNN.py") to see the misclassification error of the algorithm on either the non-preprocessed or preprocessed data.
